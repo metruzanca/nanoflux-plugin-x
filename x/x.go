@@ -9,6 +9,7 @@ package x
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"net/url"
 	"regexp"
@@ -24,6 +25,11 @@ import (
 // deliberately "x" so existing feeds owned by the former native plugin are
 // adopted without migration.
 const Name = "x"
+
+// readme is the plugin's Markdown documentation, shown in the app's docs modal.
+//
+//go:embed readme.md
+var readme string
 
 // defaultUserAgent is a desktop Firefox identity. X serves a page shaped for a
 // real browser (and is less likely to flag the session) when a browser UA is
@@ -55,8 +61,16 @@ func (p *Plugin) Meta() pluginapi.Meta {
 	if ua == "" {
 		ua = defaultUserAgent
 	}
-	return pluginapi.Meta{Name: Name, APIVersion: pluginapi.APIVersion, UserAgent: ua}
+	return pluginapi.Meta{
+		Name:       Name,
+		APIVersion: pluginapi.APIVersion,
+		UserAgent:  ua,
+		Summary:    "X profiles: reads a profile with your own logged-in session",
+	}
 }
+
+// Docs returns this plugin's Markdown documentation.
+func (*Plugin) Docs() string { return readme }
 
 func (p *Plugin) loadConfig() Config {
 	p.once.Do(func() {
