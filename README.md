@@ -30,26 +30,20 @@ Adjust `GOARCH` if your host is not `amd64` (use `arm64` for ARM).
 
 ## Configure your session
 
-The plugin needs two cookies from a logged-in x.com session.
+The plugin needs two cookies from a logged-in x.com session. Set them in
+nanoflux, not in a file: an admin opens **/admin**, finds the `x` plugin card,
+and fills in its settings.
 
 1. Open x.com in your browser and log in.
 2. Open DevTools → **Application** → **Cookies** → `https://x.com`.
-3. Create `config.json` next to the built binary (in `nanoflux/plugins/`):
-
-```json
-{
-  "auth_token": "<auth_token cookie value>",
-  "ct0": "<ct0 cookie value>"
-}
-```
+3. Copy the `auth_token` and `ct0` cookie values into the plugin's settings on
+   the admin page and save.
 
 - `auth_token` is your login session.
 - `ct0` is a security token X also expects.
 
-Restart nanoflux. If posts stop showing up, log out/in and copy the cookies
-again — sessions expire.
-
-To keep the file somewhere else, set `NF_X_CONFIG` to its full path.
+If posts stop showing up, log out/in, copy the cookies again, and update the
+settings — sessions expire.
 
 ## Usage
 

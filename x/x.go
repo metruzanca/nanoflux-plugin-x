@@ -43,21 +43,22 @@ const twitterEpoch = 1288834974657 // 2010-11-04T01:42:54Z
 // a mock host.
 var hosts = []string{"x.com", "www.x.com", "twitter.com", "www.twitter.com"}
 
-// Plugin is the X Fetcher. It caches the loaded session config; nanoflux keeps
-// one instance alive for the life of the subprocess.
+// Plugin is the X Fetcher. It holds the session the host pushed through
+// Configure; nanoflux keeps one instance alive for the life of the subprocess.
 type Plugin struct {
-	once   sync.Once
-	cfg    Config
-	cfgErr error
+	mu  sync.RWMutex
+	cfg Config
 }
 
-var _ pluginapi.Fetcher = (*Plugin)(nil)
+var (
+	_ pluginapi.Fetcher      = (*Plugin)(nil)
+	_ pluginapi.Configurable = (*Plugin)(nil)
+)
 
 // Meta declares the plugin and its browser User-Agent. The User-Agent may be
-// overridden by the session config; the config is loaded once, lazily.
+// overridden by the configured session.
 func (p *Plugin) Meta() pluginapi.Meta {
-	c := p.loadConfig()
-	ua := strings.TrimSpace(c.UserAgent)
+	ua := strings.TrimSpace(p.loadConfig().UserAgent)
 	if ua == "" {
 		ua = defaultUserAgent
 	}
@@ -72,10 +73,10 @@ func (p *Plugin) Meta() pluginapi.Meta {
 // Docs returns this plugin's Markdown documentation.
 func (*Plugin) Docs() string { return readme }
 
+// loadConfig returns the configured session under a read lock.
 func (p *Plugin) loadConfig() Config {
-	p.once.Do(func() {
-		p.cfg, p.cfgErr = LoadConfig()
-	})
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	return p.cfg
 }
 
@@ -108,11 +109,8 @@ func (p *Plugin) Discover(ctx context.Context, pageURL string, h pluginapi.Host)
 // embedded recent posts.
 func (p *Plugin) Fetch(ctx context.Context, req pluginapi.FetchRequest, h pluginapi.Host) (pluginapi.Result, error) {
 	cfg := p.loadConfig()
-	if p.cfgErr != nil {
-		return pluginapi.Result{}, p.cfgErr
-	}
 	if !cfg.Complete() {
-		return pluginapi.Result{}, errors.New("x session not configured: set auth_token and ct0 (see README.local.md)")
+		return pluginapi.Result{}, errors.New("x session not configured: an admin must set the auth_token and ct0 cookies in the app's admin plugins page")
 	}
 
 	resp, err := h.Do(ctx, pluginapi.HTTPRequest{

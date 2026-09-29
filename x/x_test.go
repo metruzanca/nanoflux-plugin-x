@@ -20,11 +20,14 @@ func (h hostFunc) Do(ctx context.Context, req pluginapi.HTTPRequest) (pluginapi.
 func (hostFunc) Now() time.Time      { return time.Now().UTC() }
 func (hostFunc) Logf(string, ...any) {}
 
-// withConfig primes a plugin with a session so tests can exercise Fetch without
-// touching the filesystem.
+// withConfig primes a plugin with a session so tests can exercise Fetch.
 func withConfig(c Config) *Plugin {
 	p := &Plugin{}
-	p.once.Do(func() { p.cfg = c })
+	p.Configure(map[string]string{
+		"auth_token": c.AuthToken,
+		"ct0":        c.Ct0,
+		"user_agent": c.UserAgent,
+	})
 	return p
 }
 
